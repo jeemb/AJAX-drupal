@@ -1,0 +1,88 @@
+<?php
+
+function mymodule_menu() {
+  $items = [];
+  $items['ajax-test'] = array(
+    'title' => 'Ajax Test',
+    'type' => MENU_NORMAL_ITEM,
+    'page callback' => 'ajax_link_page',
+    'access arguments' => array('access content');
+  );
+
+  $items['my-ajax-test/%'] = array(
+    'title' => 'Ajax test callback',
+    'type' => MENU_CALLBACK,
+    'page callback' => 'ajax_link_callback',
+    'page arguments' => array(1),
+    'access arguments' => array('access content'),
+  );
+  return $items;
+}
+
+function mymodule_time() {
+  return array(
+    '#type' => 'link',
+    '#title' => t('Ajax Link'),
+    '#href' => 'my-ajax-test/nojs',
+    '#prefix' => '<div id="ajax-link">',
+    '#suffix' => '{/div><div id="ajax-display"></div>',
+    '#ajax' => array(
+      'effect' => 'fade',
+    ),
+  );
+}
+
+function mymodule_ajax_callback($ajax) {
+  //Do any database queries, processing, ect.
+  $tile = t('The current time is: !time', array('!time' => date('Y-m-d H:i:s')));
+
+  if ($ajax == 'ajax') {
+    $commands = array();
+    //Ajax command to replace the #ajax-display element with current time
+    $commands[] = ajax_commnd_replace('#ajax-display', '<div id=ajax-display>', $time, '</div>');
+    //Add a visual 'changed' marker to the #ajax-display element
+    $commands[] = ajax_command_changed('#ajax-display');
+    //Trigger our ajax_link jQuery plugin
+    $commands[] = ajax_command_invoke(NULL, 'ajax_link');
+    //Menu 'page callback' and #ajax('callback') functions are supposed to render arrays. If returning an Ajax commands array, it must be encapsulated in a render array structure.
+    ajax_deliver(array('#type' => 'ajax', '#commands' => $commands));
+  }
+  else {
+    //No ajax, just display the time on the page using renderanle array
+    return array(
+      '#markup' => $time,
+    );
+  }
+}
+
+//THIS IS THE COMMENTED CODE FOR THE NEWS REEL
+
+// function mymodule_menu() {
+//     $items['path-to-ajax/%/%'] = array(
+//             'access arguments' => array('access content'),
+//             'page callback' => 'mymodule_ajax_callback',
+//             'page arguments' => array(1,2),
+//             'type' => MENU_CALLBACK,
+//     );
+//     return $items;
+// }
+
+// function mymodule_ajax_callback($js, $node_id) {
+//   $node = node_load($node_id);
+//
+//   if ($js == 'nojs') {
+//     drupal_goto('node/' . $node->nid);
+//   }
+//
+//   // Get the render array for the node, and render it into actual HTML
+//   $build = node_view($node);
+//   $html = render($build);
+//
+//   // Here we prepare an ajax command to insert the node's HTML into our div under News - the wrapper.
+//   $commands = array();
+//   $commands[] = ajax_command_html('#mymodule-ajax-wrapper', $html);
+//
+//   // Render the commands into JSON data format and execute them by printing them to the browser.
+//   print ajax_render($commands);
+//   exit;  // Exit so Drupal doesn't have a chance to build a whole page.
+// }
